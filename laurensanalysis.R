@@ -61,7 +61,7 @@ displayprefs <- theme(panel.grid.minor=element_blank(), panel.grid.major.x=eleme
                       plot.margin=unit(c(0.5,0.5,0.5,0.5), "cm"), legend.position="none")
 
 
-pdf("competence.pdf")
+jpeg("competence.jpeg")
 ggplot(m3_survey, aes(x=candidate_race, y=dv1)) +
   geom_point() +
   geom_pointrange(aes(ymin=ci_l, ymax=ci_u), size=0.75) +
@@ -102,7 +102,7 @@ displayprefs <- theme(panel.grid.minor=element_blank(), panel.grid.major.x=eleme
                       plot.margin=unit(c(0.5,0.5,0.5,0.5), "cm"), legend.position="none")
 
 
-pdf("honesty.pdf")
+jpeg("honesty.jpeg")
 ggplot(honesty_survey, aes(x=candidate_race, y=dv2)) +
   geom_point() +
   geom_pointrange(aes(ymin=ci_l, ymax=ci_u), size=0.75) +
