@@ -22,14 +22,16 @@ lauren600$candidate_race[lauren600$candidate_name=="Susan Johnson"] <- "White cu
 lauren600$candidate_race[lauren600$candidate_name=="Althea Johnson"] <- "Black cue"
 table(lauren600$candidate_race)
 
+table(lauren600$attack, lauren600$candidate_race)
+
 #competent
 lauren600$dv1 <- recode(lauren600$Q2.8, "1"=1, "2"=0.75, "3"=0.5, "4"=0.25, "5"=0)
 table(lauren600$dv1)
 
-m1 <- lm(dv1 ~ attack, data=lauren600)
+m1 <- lm(dv1 ~ -1 +attack, data=lauren600)
 summary(m1) 
 
-m2 <- lm(dv1 ~  candidate_race, data=lauren600)
+m2 <- lm(dv1 ~ -1 +candidate_race, data=lauren600)
 summary(m2) 
 
 m3 <- lm(dv1 ~ -1 + attack*candidate_race, data=lauren600)
@@ -55,10 +57,10 @@ dev.off()
 lauren600$dv2 <- recode(lauren600$Q2.9, "1"=1, "2"=0.75, "3"=0.5, "4"=0.25, "5"=0)
 table(lauren600$dv2)
 
-m4 <- lm(dv2 ~ attack, data=lauren600)
+m4 <- lm(dv2 ~ -1 +attack, data=lauren600)
 summary(m4) 
 
-m5 <- lm(dv2 ~  candidate_race, data=lauren600)
+m5 <- lm(dv2 ~  -1 + candidate_race, data=lauren600)
 summary(m5) 
 
 m6 <- lm(dv2 ~ -1 + attack*candidate_race, data=lauren600)
@@ -84,10 +86,10 @@ dev.off()
 lauren600$dv3 <- recode(lauren600$Q2.10, "1"=1, "2"=0.75, "3"=0.5, "4"=0.25, "5"=0)
 table(lauren600$dv3)
 
-m7 <- lm(dv3 ~ attack, data=lauren600)
+m7 <- lm(dv3 ~ -1 + attack, data=lauren600)
 summary(m7) 
 
-m8 <- lm(dv3 ~  candidate_race, data=lauren600)
+m8 <- lm(dv3 ~ -1 + candidate_race, data=lauren600)
 summary(m8) 
 
 m9 <- lm(dv3 ~ -1 + attack*candidate_race, data=lauren600)
@@ -113,10 +115,10 @@ dev.off()
 lauren600$dv4 <- recode(lauren600$Q2.11, "1"=1, "2"=0.75, "3"=0.5, "4"=0.25, "5"=0)
 table(lauren600$dv4)
 
-m10 <- lm(dv4 ~ attack, data=lauren600)
+m10 <- lm(dv4 ~ -1 + attack, data=lauren600)
 summary(m10) 
 
-m11 <- lm(dv4 ~  candidate_race, data=lauren600)
+m11 <- lm(dv4 ~  -1 + candidate_race, data=lauren600)
 summary(m11) 
 
 m12 <- lm(dv4 ~ -1 + attack*candidate_race, data=lauren600)
@@ -142,10 +144,10 @@ dev.off()
 lauren600$dv5 <- recode(lauren600$Q2.12, "1"=1, "2"=0.75, "3"=0.5, "4"=0.25, "5"=0)
 table(lauren600$dv5)
 
-m13 <- lm(dv5 ~ attack, data=lauren600)
+m13 <- lm(dv5 ~ -1 + attack, data=lauren600)
 summary(m13) 
 
-m14 <- lm(dv5 ~ + candidate_race, data=lauren600)
+m14 <- lm(dv5 ~ -1 + candidate_race, data=lauren600)
 summary(m14) 
 
 m15 <- lm(dv5 ~ -1 + attack*candidate_race, data=lauren600)
@@ -166,3 +168,17 @@ ggplot(values_survey, aes(x=candidate_race, y=dv5)) +
   scale_x_discrete(name="Candidate racial cue", labels=c("White cue", "Black cue")) + 
   theme_bw() + displayprefs
 dev.off()
+
+#pretests
+
+hs<-(lauren600$`Hostile Sexism 1`+ lauren600$`Hostile Sexism 2` + lauren600$`Hostile Sexism 3`)
+table(hs)
+
+rr2<- recode(lauren600$`RR 2`, "1"=5, "2"=4, "3"=3, "4"=2, "5"=1 )
+rr3<- recode(lauren600$`RR 3`, "1"=5, "2"=4, "3"=3, "4"=2, "5"=1 )
+
+rr<-(lauren600$`RR 1` + rr2 + rr3 + lauren600$`RR 4`)
+table(rr)
+
+intmodel <- lm(dv5 ~ rr*hs, data=lauren600)
+summary(intmodel)
