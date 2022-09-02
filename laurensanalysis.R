@@ -1,4 +1,9 @@
-mturk <- read.csv("Downloads/laurenrusp.csv")
+library(survey)
+library(ggplot2)
+library(dplyr)
+library(effects)
+library(scales)
+mturk <- read.csv("Downloads/Palladino+RUSP+Survey_March+2,+2020_10.09.csv")
 
 #Stripping out the first 15 observations, which are all survey previews or surveys taken by us
 mturk <- mturk[16:nrow(mturk),]
@@ -28,12 +33,10 @@ mturk$candidate_race <- relevel(mturk$candidate_race, "No cue")
 table(mturk$candidate_race)
 
 #Recoding the DV into a 0-1 scale, with 1 being more favorable evaluations of the candidate
-library(dplyr) #you may need to run install.packages("dplyr") to get this to run
 mturk$dv1 <- recode(mturk$Q2.8, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
 table(mturk$dv1)
 
 levels(mturk$attack)
-
 
 m1 <- lm(dv1 ~ attack, data=mturk)
 summary(m1) 
@@ -49,8 +52,6 @@ summary(m3)
 
 
 #Now plotting just the means (which should be mathematically equivalent to the point estimates from the above models)
-library(survey)
-library(ggplot2)
 
 mturk_survey <- svydesign(ids = ~1, data=mturk) #This just transforms the data into something the survey package understands; you can use this to assign weights to respondents
 
@@ -73,7 +74,6 @@ dev.off()
 
 #lauren attempts to repeat with honesty (dv2=Q2.9)
 
-library(dplyr)
 mturk$dv2 <- recode(mturk$Q2.9, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
 table(mturk$dv2)
 
@@ -91,7 +91,6 @@ m6 <- lm(dv2 ~ attack*candidate_race, data=mturk)
 summary(m6) 
 #F(5, 358)=2.984, p=0.01183
 
-library(ggplot2)
 
 mturk_survey <- svydesign(ids = ~1, data=mturk) 
 
@@ -114,7 +113,6 @@ dev.off()
 
 #lauren attempts to repeat with concern (dv3=Q2.10)
 
-library(dplyr)
 mturk$dv3 <- recode(mturk$Q2.10, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
 table(mturk$dv3)
 
@@ -131,8 +129,6 @@ summary(m8)
 m9<-lm(dv3 ~ attack*candidate_race, data=mturk)
 summary(m9) 
 #F(5, 358)=2.524, p=0.02905
-
-library(ggplot2)
 
 mturk_survey <- svydesign(ids = ~1, data=mturk) 
 
@@ -155,7 +151,6 @@ dev.off()
 
 #lauren attempts to repeat with reliability (dv4=Q2.11)
 
-library(dplyr)
 mturk$dv4<- recode(mturk$Q2.11, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
 table(mturk$dv4)
 
@@ -172,8 +167,6 @@ summary(m11)
 m12<- lm(dv4 ~ attack*candidate_race, data=mturk)
 summary(m12)
 #F(5, 358)=6.325, p=1.212e-05
-
-library(ggplot2)
 
 mturk_survey <- svydesign(ids = ~1, data=mturk) 
 
@@ -196,7 +189,6 @@ dev.off()
 
 #lauren attempts to repeat with same values (dv5=Q2.12)
 
-library(dplyr)
 mturk$dv5<- recode(mturk$Q2.12, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
 table(mturk$dv4)
 
@@ -213,8 +205,6 @@ summary(m14)
 m15<- lm(dv5 ~ attack*candidate_race, data=mturk)
 summary(m15)
 #F(5, 358)=2.588, p=0.0257
-
-library(ggplot2)
 
 mturk_survey <- svydesign(ids = ~1, data=mturk) 
 
@@ -234,3 +224,33 @@ ggplot(values_survey, aes(x=candidate_race, y=dv5)) +
   scale_x_discrete(name="Candidate racial cue", labels=c("No cue", "White cue", "Black cue")) + 
   theme_bw() + displayprefs
 dev.off()
+
+#composite measure of trust
+trust <- (mturk$dv1*0.2 + mturk$dv2*0.2 + mturk$dv3*0.2 + mturk$dv4*0.2 + mturk$dv5*0.2)
+table(trust)
+
+trustlm <- lm(trust~candidate_race*attack, data=mturk)
+summary(trustlm)
+
+interact <- effect('candidate_race*attack', trustlm, se=TRUE)
+interact<-as.data.frame(interact)
+interact$attack <- factor(interact$attack,  
+                             level=c("No attack", "Gendered attack"),    
+                             labels=c("No attack", "Gendered attack"))   
+interact$candidate_race <- factor(interact$candidate_race,
+                                     level=c("White cue", "Black cue", "No cue"),   
+                                     labels=c("White cue", "Black cue", "No cue"))
+plot6<-ggplot(data=interact, aes(x=attack, y=fit, group=candidate_race))+
+  geom_line(size=2, aes(color=candidate_race))+
+  geom_ribbon(aes(ymin=fit-se, ymax=fit+se,fill=candidate_race),alpha=.2)+
+  ylab("Trust")+
+  xlab("Attack Type")+
+  theme_bw()+
+  theme(text = element_text(size=12),
+        legend.text = element_text(size=12),
+        legend.direction = "horizontal",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position="top")
+plot6
+
