@@ -2,7 +2,6 @@ library(survey)
 library(ggplot2)
 library(dplyr)
 library(effects)
-library(scales)
 mturk <- read.csv("Downloads/Palladino+RUSP+Survey_March+2,+2020_10.09.csv")
 
 #Stripping out the first 15 observations, which are all survey previews or surveys taken by us
@@ -33,10 +32,8 @@ mturk$candidate_race <- relevel(mturk$candidate_race, "No cue")
 table(mturk$candidate_race)
 
 #Recoding the DV into a 0-1 scale, with 1 being more favorable evaluations of the candidate
-mturk$dv1 <- recode(mturk$Q2.8, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
+mturk$dv1 <-dplyr::recode(mturk$Q2.8, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
 table(mturk$dv1)
-
-levels(mturk$attack)
 
 m1 <- lm(dv1 ~ attack, data=mturk)
 summary(m1) 
@@ -74,7 +71,7 @@ dev.off()
 
 #lauren attempts to repeat with honesty (dv2=Q2.9)
 
-mturk$dv2 <- recode(mturk$Q2.9, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
+mturk$dv2 <-dplyr::recode(mturk$Q2.9, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
 table(mturk$dv2)
 
 levels(mturk$attack)
@@ -111,12 +108,9 @@ ggplot(honesty_survey, aes(x=candidate_race, y=dv2)) +
   theme_bw() + displayprefs
 dev.off()
 
-#lauren attempts to repeat with concern (dv3=Q2.10)
-
-mturk$dv3 <- recode(mturk$Q2.10, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
+#concern
+mturk$dv3 <-dplyr::recode(mturk$Q2.10, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
 table(mturk$dv3)
-
-levels(mturk$attack)
 
 m7 <- lm(dv3 ~ attack, data=mturk)
 summary(m7)
@@ -149,12 +143,9 @@ ggplot(concern_survey, aes(x=candidate_race, y=dv3)) +
   theme_bw() + displayprefs
 dev.off()
 
-#lauren attempts to repeat with reliability (dv4=Q2.11)
-
-mturk$dv4<- recode(mturk$Q2.11, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
+#reliable
+mturk$dv4 <-dplyr::recode(mturk$Q2.11, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
 table(mturk$dv4)
-
-levels(mturk$attack)
 
 m10<- lm(dv4 ~ attack, data=mturk)
 summary(m10)
@@ -187,12 +178,9 @@ ggplot(reliable_survey, aes(x=candidate_race, y=dv4)) +
   theme_bw() + displayprefs
 dev.off()
 
-#lauren attempts to repeat with same values (dv5=Q2.12)
-
-mturk$dv5<- recode(mturk$Q2.12, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
+#shares the same values
+mturk$dv5 <-dplyr::recode(mturk$Q2.12, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
 table(mturk$dv4)
-
-levels(mturk$attack)
 
 m13<- lm(dv5 ~ attack, data=mturk)
 summary(m13)
@@ -231,6 +219,9 @@ table(trust)
 
 trustlm <- lm(trust~candidate_race*attack, data=mturk)
 summary(trustlm)
+stargazer(trustlm)
+s
+stargazer(m3, m6, m9, m12, m15)
 
 interact <- effect('candidate_race*attack', trustlm, se=TRUE)
 interact<-as.data.frame(interact)
