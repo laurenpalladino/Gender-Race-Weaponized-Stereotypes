@@ -245,3 +245,17 @@ plot6<-ggplot(data=interact, aes(x=attack, y=fit, group=candidate_race))+
         legend.position="top")
 plot6
 
+#blank graph for APSA slides
+plot7<-ggplot(data=interact, aes(x=attack, y=fit, group=candidate_race))+
+  geom_line(size=2, aes(color=candidate_race))+
+  geom_ribbon(aes(ymin=fit-se, ymax=fit+se,fill=candidate_race),alpha=.2)+
+  ylab("Trust")+
+  xlab("Attack Type")+
+  theme_bw()+
+  theme(text = element_text(size=12),
+        legend.text = element_text(size=12),
+        legend.direction = "horizontal",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position="top")
+plot7
