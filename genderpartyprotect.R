@@ -371,8 +371,8 @@ plot7<-ggplot(data=interactcapabledf, aes(x=attack, y=fit, group=party))+
 plot7
 
 #are the attacks against susan justified?
-justified <-dplyr::recode(mturkdata$justify, "1"=0, "2"=0.25, "3"=0.5, "4"=0.75, "5"=1)
-#1=definitely yes #5=definitely no
+justified <-dplyr::recode(mturkdata$justify, "1"=1, "2"=0.75, "3"=0.5, "4"=0.25, "5"=0)
+#1=definitely no #5=definitely yes
 table(justified)
 
 justifymodel <-lm(justified~party + attack, data=mturkdata)
