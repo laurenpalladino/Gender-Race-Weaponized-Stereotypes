@@ -1,15 +1,29 @@
-library(survey)
-library(ggplot2)
+library(sjPlot)
 library(dplyr)
-library(effects)
-mturk <- read.csv("Downloads/Palladino+RUSP+Survey_March+2,+2020_10.09.csv")
+library(ggplot2)
 
-#Stripping out the first 15 observations, which are all survey previews or surveys taken by us
+mturk <- read.csv("Documents/[RESEARCH] HHH/Palladino+RUSP+Survey_March+2,+2020_10.09.csv")
+
 mturk <- mturk[16:nrow(mturk),]
-head(mturk) #Start dates all look correct
+names(mturk) #DVs are in variables Q2.8, Q2.9, Q2.10 Q2.11, Q2.12
 
-names(mturk)
-#DVs are in variables Q2.8, Q2.9, Q2.10 Q2.11, Q2.12
+#cleaning up some demographics
+mturk$female<-NA
+mturk$female[mturk$Q1.1=="Female"]<-1
+mturk$female[mturk$Q1.1=="Male"]<-0
+
+mturk$pid7<-NA
+mturk$pid7[mturk$Q1.4=="Democrat" & mturk$Q1.5=="Strong ${q://QID44/ChoiceGroup/SelectedChoices}"]<-1
+mturk$pid7[mturk$Q1.4=="Democrat" & mturk$Q1.5=="Not strong ${q://QID44/ChoiceGroup/SelectedChoices}"]<-2
+mturk$pid7[mturk$Q1.4=="Independent" & mturk$Q1.6=="Closer to Democratic Party"]<-3
+mturk$pid7[mturk$Q1.4=="Other" & mturk$Q1.6=="Closer to Democratic Party"]<-3
+mturk$pid7[mturk$Q1.4=="Independent" & mturk$Q1.6=="Neither"]<-4
+mturk$pid7[mturk$Q1.4=="Other" & mturk$Q1.6=="Neither"]<-4
+mturk$pid7[mturk$Q1.4=="Independent" & mturk$Q1.5=="Closer to Republican Party}"]<-5
+mturk$pid7[mturk$Q1.4=="Other" & mturk$Q1.5=="Closer to Republican Party}"]<-5
+mturk$pid7[mturk$Q1.4=="Republican" & mturk$Q1.5=="Not strong ${q://QID44/ChoiceGroup/SelectedChoices}"]<-6
+mturk$pid7[mturk$Q1.4=="Republican" & mturk$Q1.5=="Strong ${q://QID44/ChoiceGroup/SelectedChoices}"]<-7
+table(mturk$pid7)
 
 #Creating treatment variables
 mturk$attack <- as.factor(NA)
@@ -32,230 +46,58 @@ mturk$candidate_race <- relevel(mturk$candidate_race, "No cue")
 table(mturk$candidate_race)
 
 #Recoding the DV into a 0-1 scale, with 1 being more favorable evaluations of the candidate
-mturk$dv1 <-dplyr::recode(mturk$Q2.8, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
-table(mturk$dv1)
+mturk$dv1 <- recode(mturk$Q2.8, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
 
-m1 <- lm(dv1 ~ attack, data=mturk)
-summary(m1) 
-#Great! (well, not great) Gendered attacks significantly reduce evaluations of candidates
+competentlm <- lm(dv1 ~ attack*candidate_race + pid7 + female, data=mturk)
+summary(competentlm) 
 
-m2 <- lm(dv1 ~ candidate_race, data=mturk)
-summary(m2) 
-#Okay, also cool. Giving the name seems to result in an ever so slightly (but not significantly) lower evaluation.
+#plot
+plot_model(competentlm, type = "pred", terms = c("attack", "candidate_race"),
+           axis.title = c("Attack Type", "Competence"),
+           legend.title = "Candidate Race", title = "Predicted Competence")
 
-m3 <- lm(dv1 ~ attack*candidate_race, data=mturk)
-summary(m3) 
-#Okay, so this looks like there is a significant main effect, but no interaction. So gendered attacks harm candidates, but it does not look like there's a big difference between white and black candidates
+#honesty
+mturk$dv2 <- recode(mturk$Q2.9, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
+honestlm <- lm(dv2 ~ attack*candidate_race + pid7 + female, data=mturk)
+summary(honestlm) 
 
-
-#Now plotting just the means (which should be mathematically equivalent to the point estimates from the above models)
-
-mturk_survey <- svydesign(ids = ~1, data=mturk) #This just transforms the data into something the survey package understands; you can use this to assign weights to respondents
-
-m3_survey <- svyby(~dv1, ~attack + ~candidate_race, mturk_survey, svymean, na.rm=TRUE, vartype=c("se","ci"))
-
-displayprefs <- theme(panel.grid.minor=element_blank(), panel.grid.major.x=element_blank(), 
-                      axis.title.x=element_blank(), 
-                      plot.margin=unit(c(0.5,0.5,0.5,0.5), "cm"), legend.position="none")
-
-
-jpeg("competence.jpeg")
-ggplot(m3_survey, aes(x=candidate_race, y=dv1)) +
-  geom_point() +
-  geom_pointrange(aes(ymin=ci_l, ymax=ci_u), size=0.75) +
-  facet_grid(.~attack) +
-  scale_y_continuous(name="Perceived competence", limits=c(0,1)) + 
-  scale_x_discrete(name="Candidate racial cue", labels=c("No cue", "White cue", "Black cue")) + 
-  theme_bw() + displayprefs
-dev.off()
-
-#lauren attempts to repeat with honesty (dv2=Q2.9)
-
-mturk$dv2 <-dplyr::recode(mturk$Q2.9, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
-table(mturk$dv2)
-
-levels(mturk$attack)
-
-m4 <- lm(dv2 ~ attack, data=mturk)
-summary(m4)
-#F(1, 362)= 6.713, p= 0.009958
-
-m5 <- lm(dv2 ~ candidate_race, data=mturk)
-summary(m5)
-#F(2, 361)=1.617, p=0.1999
-
-m6 <- lm(dv2 ~ attack*candidate_race, data=mturk)
-summary(m6) 
-#F(5, 358)=2.984, p=0.01183
-
-
-mturk_survey <- svydesign(ids = ~1, data=mturk) 
-
-honesty_survey <- svyby(~dv2, ~attack + ~candidate_race, mturk_survey, svymean, na.rm=TRUE, vartype=c("se","ci"))
-
-displayprefs <- theme(panel.grid.minor=element_blank(), panel.grid.major.x=element_blank(), 
-                      axis.title.x=element_blank(), 
-                      plot.margin=unit(c(0.5,0.5,0.5,0.5), "cm"), legend.position="none")
-
-
-jpeg("honesty.jpeg")
-ggplot(honesty_survey, aes(x=candidate_race, y=dv2)) +
-  geom_point() +
-  geom_pointrange(aes(ymin=ci_l, ymax=ci_u), size=0.75) +
-  facet_grid(.~attack) +
-  scale_y_continuous(name="Perceived honesty", limits=c(0,1)) + 
-  scale_x_discrete(name="Candidate racial cue", labels=c("No cue", "White cue", "Black cue")) + 
-  theme_bw() + displayprefs
-dev.off()
+plot_model(honestlm, type = "pred", terms = c("attack", "candidate_race"),
+           axis.title = c("Attack Type", "Honesty"),
+           legend.title = "Candidate Race", title = "Predicted Honesty")
 
 #concern
-mturk$dv3 <-dplyr::recode(mturk$Q2.10, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
-table(mturk$dv3)
+mturk$dv3 <- recode(mturk$Q2.10, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
+concernlm<-lm(dv3 ~ attack*candidate_race + pid7 + female, data=mturk)
+summary(concernlm) 
 
-m7 <- lm(dv3 ~ attack, data=mturk)
-summary(m7)
-#F(1, 362)= 7.947, p= 0.005082
-
-m8 <- lm(dv3 ~ candidate_race, data=mturk)
-summary(m8)
-#F(2, 361)=1.366 p=0.2566
-
-m9<-lm(dv3 ~ attack*candidate_race, data=mturk)
-summary(m9) 
-#F(5, 358)=2.524, p=0.02905
-
-mturk_survey <- svydesign(ids = ~1, data=mturk) 
-
-concern_survey <- svyby(~dv3, ~attack + ~candidate_race, mturk_survey, svymean, na.rm=TRUE, vartype=c("se","ci"))
-
-displayprefs <- theme(panel.grid.minor=element_blank(), panel.grid.major.x=element_blank(), 
-                      axis.title.x=element_blank(), 
-                      plot.margin=unit(c(0.5,0.5,0.5,0.5), "cm"), legend.position="none")
-
-#10/24 attempt to fix pdf export function
-pdf("concern1.pdf")
-ggplot(concern_survey, aes(x=candidate_race, y=dv3)) +
-  geom_point() +
-  geom_pointrange(aes(ymin=ci_l, ymax=ci_u), size=0.75) +
-  facet_grid(.~attack) +
-  scale_y_continuous(name="Perceived concern", limits=c(0,1)) + 
-  scale_x_discrete(name="Candidate racial cue", labels=c("No cue", "White cue", "Black cue")) + 
-  theme_bw() + displayprefs
-dev.off()
+plot_model(concernlm, type = "pred", terms = c("attack", "candidate_race"),
+           axis.title = c("Attack Type", "Concern for Constituents"),
+           legend.title = "Candidate Race", title = "Predicted Concern")
 
 #reliable
-mturk$dv4 <-dplyr::recode(mturk$Q2.11, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
-table(mturk$dv4)
+mturk$dv4<- recode(mturk$Q2.11, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
+reliablelm<- lm(dv4 ~ attack*candidate_race + pid7 + female, data=mturk)
+summary(reliablelm)
 
-m10<- lm(dv4 ~ attack, data=mturk)
-summary(m10)
-#F(1, 362)= 26.81, p= 0.03.729e-07
+plot_model(reliablelm, type = "pred", terms = c("attack", "candidate_race"),
+           axis.title = c("Attack Type", "Reliability"),
+           legend.title = "Candidate Race", title = "Predicted Reliability")
 
-m11<- lm(dv4 ~ candidate_race, data=mturk)
-summary(m11)
-#F(2, 361)=1.610 p=0.2014
+#same values
+mturk$dv5<- recode(mturk$Q2.12, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
+valueslm<- lm(dv5 ~ attack*candidate_race + pid7 + female, data=mturk)
+summary(valueslm)
 
-m12<- lm(dv4 ~ attack*candidate_race, data=mturk)
-summary(m12)
-#F(5, 358)=6.325, p=1.212e-05
-
-mturk_survey <- svydesign(ids = ~1, data=mturk) 
-
-reliable_survey<-svyby(~dv4, ~attack + ~candidate_race, mturk_survey, svymean, na.rm=TRUE, vartype=c("se","ci"))
-
-displayprefs <- theme(panel.grid.minor=element_blank(), panel.grid.major.x=element_blank(), 
-                      axis.title.x=element_blank(), 
-                      plot.margin=unit(c(0.5,0.5,0.5,0.5), "cm"), legend.position="none")
+plot_model(valueslm, type = "pred", terms = c("attack", "candidate_race"),
+           axis.title = c("Attack Type", "Shares the Same Values as I Do"),
+           legend.title = "Candidate Race", title = "Predicted Values")
 
 
-pdf("reliable.pdf")
-ggplot(reliable_survey, aes(x=candidate_race, y=dv4)) +
-  geom_point() +
-  geom_pointrange(aes(ymin=ci_l, ymax=ci_u), size=0.75) +
-  facet_grid(.~attack) +
-  scale_y_continuous(name="Perceived reliability", limits=c(0,1)) + 
-  scale_x_discrete(name="Candidate racial cue", labels=c("No cue", "White cue", "Black cue")) + 
-  theme_bw() + displayprefs
-dev.off()
+#May 2023 figure revamp:
+trust <- (mturk$dv1/5) + (mturk$dv2/5) + (mturk$dv3/5) + (mturk$dv4/5) + (mturk$dv5/5)
 
-#shares the same values
-mturk$dv5 <-dplyr::recode(mturk$Q2.12, "Agree Strongly"=1, "Agree"= 0.75, "Neither Agree nor Disagree" = 0.5, "Disagree"=0.25, "Disagree Strongly"=0)
-table(mturk$dv4)
+trustlm<-lm(trust ~ attack*candidate_race + pid7 + female, data=mturk)
 
-m13<- lm(dv5 ~ attack, data=mturk)
-summary(m13)
-#F(1, 362)= 5.609, p= 0.01839
-
-m14<- lm(dv5 ~ candidate_race, data=mturk)
-summary(m14)
-#F(2, 361)=2.401 p=0.09207
-
-m15<- lm(dv5 ~ attack*candidate_race, data=mturk)
-summary(m15)
-#F(5, 358)=2.588, p=0.0257
-
-mturk_survey <- svydesign(ids = ~1, data=mturk) 
-
-values_survey<-svyby(~dv5, ~attack + ~candidate_race, mturk_survey, svymean, na.rm=TRUE, vartype=c("se","ci"))
-
-displayprefs <- theme(panel.grid.minor=element_blank(), panel.grid.major.x=element_blank(), 
-                      axis.title.x=element_blank(), 
-                      plot.margin=unit(c(0.5,0.5,0.5,0.5), "cm"), legend.position="none")
-
-
-pdf("values.pdf")
-ggplot(values_survey, aes(x=candidate_race, y=dv5)) +
-  geom_point() +
-  geom_pointrange(aes(ymin=ci_l, ymax=ci_u), size=0.75) +
-  facet_grid(.~attack) +
-  scale_y_continuous(name="Perceived same values", limits=c(0,1)) + 
-  scale_x_discrete(name="Candidate racial cue", labels=c("No cue", "White cue", "Black cue")) + 
-  theme_bw() + displayprefs
-dev.off()
-
-#composite measure of trust
-trust <- (mturk$dv1*0.2 + mturk$dv2*0.2 + mturk$dv3*0.2 + mturk$dv4*0.2 + mturk$dv5*0.2)
-table(trust)
-
-trustlm <- lm(trust~candidate_race*attack, data=mturk)
-summary(trustlm)
-stargazer(trustlm)
-s
-stargazer(m3, m6, m9, m12, m15)
-
-interact <- effect('candidate_race*attack', trustlm, se=TRUE)
-interact<-as.data.frame(interact)
-interact$attack <- factor(interact$attack,  
-                             level=c("No attack", "Gendered attack"),    
-                             labels=c("No attack", "Gendered attack"))   
-interact$candidate_race <- factor(interact$candidate_race,
-                                     level=c("White cue", "Black cue", "No cue"),   
-                                     labels=c("White cue", "Black cue", "No cue"))
-plot6<-ggplot(data=interact, aes(x=attack, y=fit, group=candidate_race))+
-  geom_line(size=2, aes(color=candidate_race))+
-  geom_ribbon(aes(ymin=fit-se, ymax=fit+se,fill=candidate_race),alpha=.2)+
-  ylab("Trust")+
-  xlab("Attack Type")+
-  theme_bw()+
-  theme(text = element_text(size=12),
-        legend.text = element_text(size=12),
-        legend.direction = "horizontal",
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        legend.position="top")
-plot6
-
-#blank graph for APSA slides
-plot7<-ggplot(data=interact, aes(x=attack, y=fit, group=candidate_race))+
-  geom_line(size=2, aes(color=candidate_race))+
-  geom_ribbon(aes(ymin=fit-se, ymax=fit+se,fill=candidate_race),alpha=.2)+
-  ylab("Trust")+
-  xlab("Attack Type")+
-  theme_bw()+
-  theme(text = element_text(size=12),
-        legend.text = element_text(size=12),
-        legend.direction = "horizontal",
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        legend.position="top")
-plot7
+plot_model(trustlm, type = "pred", terms = c("attack", "candidate_race"),
+                axis.title = c("Attack Type", "Trust"),
+                legend.title = "Candidate Race", title = "Predicted Trust")
