@@ -2,7 +2,7 @@ library(sjPlot)
 library(dplyr)
 library(ggplot2)
 
-mturk <- read_csv("Documents/[RESEARCH] HHH/Experiment 1/Data/Palladino+RUSP+Survey_March+2,+2020_10.09.csv")
+mturk <- read_csv("Experiment 1/Data/Palladino+RUSP+Survey_March+2,+2020_10.09.csv")
 
 mturk <- mturk[16:nrow(mturk),]
 names(mturk) #DVs are in variables Q2.8, Q2.9, Q2.10 Q2.11, Q2.12
@@ -52,13 +52,8 @@ mturk$dv1[mturk$Q2.8=="Agree"]<-0.75
 mturk$dv1[mturk$Q2.8=="Neither Agree nor Disagree"]<-0.5
 mturk$dv1[mturk$Q2.8=="Disagree"]<-0.25
 mturk$dv1[mturk$Q2.8=="Disagree Strongly"]<-0
-competentlm <- lm(dv1 ~ attack*candidate_race + pid7 + female, data=mturk)
-summary(competentlm) 
-
-#plot
-plot_model(competentlm, type = "pred", terms = c("attack", "candidate_race"),
-           axis.title = c("Attack Type", "Competence"),
-           legend.title = "Candidate Race", title = "")
+competent1 <- lm(dv1 ~ attack+candidate_race + pid7 + female, data=mturk)
+competent2 <- lm(dv1 ~ attack*candidate_race + pid7 + female, data=mturk)
 
 #honesty
 mturk$dv2<-NA
@@ -67,12 +62,8 @@ mturk$dv2[mturk$Q2.9=="Agree"]<-0.75
 mturk$dv2[mturk$Q2.9=="Neither Agree nor Disagree"]<-0.5
 mturk$dv2[mturk$Q2.9=="Disagree"]<-0.25
 mturk$dv2[mturk$Q2.9=="Disagree Strongly"]<-0
-honestlm <- lm(dv2 ~ attack*candidate_race + pid7 + female, data=mturk)
-summary(honestlm) 
-
-plot_model(honestlm, type = "pred", terms = c("attack", "candidate_race"),
-           axis.title = c("Attack Type", "Honesty"),
-           legend.title = "Candidate Race", title = "")
+honest1 <- lm(dv2 ~ attack+candidate_race + pid7 + female, data=mturk)
+honest2 <- lm(dv2 ~ attack*candidate_race + pid7 + female, data=mturk)
 
 #concern
 mturk$dv3<-NA
@@ -81,12 +72,8 @@ mturk$dv3[mturk$Q2.10=="Agree"]<-0.75
 mturk$dv3[mturk$Q2.10=="Neither Agree nor Disagree"]<-0.5
 mturk$dv3[mturk$Q2.10=="Disagree"]<-0.25
 mturk$dv3[mturk$Q2.10=="Disagree Strongly"]<-0
-concernlm<-lm(dv3 ~ attack*candidate_race + pid7 + female, data=mturk)
-summary(concernlm) 
-
-plot_model(concernlm, type = "pred", terms = c("attack", "candidate_race"),
-           axis.title = c("Attack Type", "Concern for Constituents"),
-           legend.title = "Candidate Race", title = "")
+concern1<-lm(dv3 ~ attack+candidate_race + pid7 + female, data=mturk)
+concern2<-lm(dv3 ~ attack*candidate_race + pid7 + female, data=mturk)
 
 #reliable
 mturk$dv4<-NA
@@ -95,12 +82,8 @@ mturk$dv4[mturk$Q2.11=="Agree"]<-0.75
 mturk$dv4[mturk$Q2.11=="Neither Agree nor Disagree"]<-0.5
 mturk$dv4[mturk$Q2.11=="Disagree"]<-0.25
 mturk$dv4[mturk$Q2.11=="Disagree Strongly"]<-0
-reliablelm<- lm(dv4 ~ attack*candidate_race + pid7 + female, data=mturk)
-summary(reliablelm)
-
-plot_model(reliablelm, type = "pred", terms = c("attack", "candidate_race"),
-           axis.title = c("Attack Type", "Reliability"),
-           legend.title = "Candidate Race", title = "")
+reliable1<- lm(dv4 ~ attack+candidate_race + pid7 + female, data=mturk)
+reliable2<- lm(dv4 ~ attack*candidate_race + pid7 + female, data=mturk)
 
 #same values
 mturk$dv5<-NA
@@ -109,13 +92,11 @@ mturk$dv5[mturk$Q2.12=="Agree"]<-0.75
 mturk$dv5[mturk$Q2.12=="Neither Agree nor Disagree"]<-0.5
 mturk$dv5[mturk$Q2.12=="Disagree"]<-0.25
 mturk$dv5[mturk$Q2.12=="Disagree Strongly"]<-0
-valueslm<- lm(dv5 ~ attack*candidate_race + pid7 + female, data=mturk)
-summary(valueslm)
+values1<- lm(dv5 ~ attack+candidate_race + pid7 + female, data=mturk)
+values2<- lm(dv5 ~ attack*candidate_race + pid7 + female, data=mturk)
 
-plot_model(valueslm, type = "pred", terms = c("attack", "candidate_race"),
-           axis.title = c("Attack Type", "Shares the Same Values as I Do"),
-           legend.title = "Candidate Race", title = "")
-
+stargazer(competent1, competent2, honest1, honest2, concern1, concern2,
+          reliable1, reliable2, values1, values2, type="text", star.cutoffs = c(0.05, 0.01, 0.001))
 
 #May 2023 figure revamp:
 mturk$trust <- (mturk$dv1/5) + (mturk$dv2/5) + (mturk$dv3/5) + (mturk$dv4/5) + (mturk$dv5/5)
@@ -142,7 +123,7 @@ plot_model(trustlm, type = "pred", terms = c("attack", "candidate_race"),
     axis.text.x = element_text(size = 22),
     text = element_text(size = 25),
     legend.position = "bottom",
-    aspect.ratio = 1
+    aspect.ratio = 0.85
   ) +
   aes(shape = group)+
   annotate("rect", xmin = 1, xmax = 2, ymin = 0.74, ymax =0.74, alpha=1, colour = "grey45") +
