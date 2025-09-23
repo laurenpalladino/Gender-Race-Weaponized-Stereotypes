@@ -57,6 +57,8 @@ mturk$candidate_race[mturk$candidate_name=="Susan Johnson"] <- "white cue"
 table(mturk$candidate_race)
 table(mturk$attack, mturk$candidate_race)
 
+t.test()
+
 #hostile sexism
 HS1<-as.numeric(mturk$HS1)
 HS2<-as.numeric(mturk$HS2)
@@ -101,17 +103,17 @@ values2 <- lm(dv5~attack*candidate_race + HS + RR + pid7 + female, data=mturk)
 stargazer(competent1, competent2, honest1, honest2, concern1, concern2,
           reliable1, reliable2, values1, values2, type="text",star.cutoffs = c(0.05, 0.01, 0.001))
 
-#composite model
+#overalltrust model
 mturk$trust <- (mturk$dv1*0.20 + mturk$dv2*0.20 + mturk$dv3*0.20 + mturk$dv4*0.20 + mturk$dv5*0.20)
 
 trustlm <- lm(trust~candidate_race*attack + pid7 + female+ HS+ RR, data=mturk)
 trustlm2 <- lm(trust~candidate_race+attack + pid7 + female+ HS+ RR, data=mturk)
 stargazer(trustlm, trustlm2, type="text", star.cutoffs = c(0.05, 0.01, 0.001))
 
-t.test(trust~candidate_race, data=subset(mturk, congruent=="congruent"))
 t.test(trust~candidate_race, data=subset(mturk, congruent=="incongruent"))
 
 #graph
+
 plot_model(trustlm, type = "pred", terms = c("attack", "candidate_race"),
                 axis.title = c("Attack Type", "Composite Evaluation"),
                 legend.title = "Candidate Race", title = "")+
